@@ -1,0 +1,30 @@
+#!/bin/bash
+
+display_usage() {
+  echo -e "Usage: $0 [INTERFACE]
+This script prints out the IPv4 of a given network interface INTERFACE.
+  Examples:
+    inetof eth0
+    inetof wlan0
+    inetof eno1
+"
+}
+
+get_ip() {
+    res=''
+    res=$(ifconfig $1 2>/dev/null)
+    if [[ -n $res ]]
+    then
+        echo $res | \
+            grep -P -o 'inet \d+.\d+.\d+.\d+' | \
+            sed 's/inet //'
+    fi
+}
+
+if [[ $# -ne 1 || ($1 == "--help") || ($1 == "-h") ]]
+then
+    display_usage
+    exit 1
+fi
+
+get_ip $1
