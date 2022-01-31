@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rename "s/_LATE//" *
 prefix=$(ls $PWD | grep -o '^.*[a-z]_[0-9]\{5,\}_' | uniq | grep -o '^.*[a-z]')
 names=($(echo $prefix | grep -o '^.*[a-z]'))
 for name in "${names[@]}"
