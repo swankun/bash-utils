@@ -6,21 +6,22 @@ function do_extract() {
     names=($(echo $prefix | grep -o '^.*[a-z]'))
     for name in "${names[@]}"
     do
+        [ -d "$name" ] && break
         mkdir $name > /dev/null 2>&1
         mv $name* $name/ > /dev/null 2>&1
         cd $name/
         n=0;
         if [ $(ls -1 *.pdf 2>/dev/null | wc -l) != 0 ]; then	
-        for file in *.pdf; do 
-            mv "${file}" report_"${n}".pdf; 
-            n=$((n+1)); 
+            for file in *.pdf; do 
+                mv "${file}" report_"${n}".pdf > /dev/null 2&>1; 
+                n=$((n+1)); 
             done
         elif [ $(ls -1 *.docx 2>/dev/null | wc -l) != 0 ]; then
             for file in *.docx; do 
-            mv "${file}" report_"${n}".docx; 
-            n=$((n+1)); 
+                mv "${file}" report_"${n}".docx > /dev/null 2&>1; 
+                n=$((n+1)); 
             done
-        fi
+            fi
         if [ $(ls -1 *.m 2>/dev/null | wc -l) != 0 ]; then
             rename 'y/ /_/' *.m	# replace spaces with _
             rename "s/$name_.*[0-9]_.*[0-9]_//" *.m
@@ -40,8 +41,8 @@ function do_extract() {
                 create_my_cont_conv
             fi
             script_name=$(find *m -type f ! -name "my_*.m")
-            echo "Renaming script from $PWD/$script_name to $PWD/script.m"
-            mv $script_name script.m
+            echo "Renaming script $PWD/$script_name to $PWD/script.m"
+            mv $script_name script.m > /dev/null 2&>1
         fi
         cd ../
     done
@@ -119,7 +120,7 @@ EOF
 
 function do_publish() {
     names=($(ls $PWD))
-    cmd=""
+    cmd="set(0,'DefaultFigureWindowStyle','normal'); "
     for name in "${names[@]}"
     do
 	if [ $(ls -1 $name/script.m 2>/dev/null | wc -l) != 0 ]; then
@@ -129,12 +130,12 @@ function do_publish() {
             cd ../
 	fi
     done
-    matlab -nouserjavapath -nodisplay -batch "$cmd"
+    matlab -nosplash -nodisplay -batch "$cmd"
 }
 
 
 ## Entry point
-if [[ $# -ne 3 || ($1 == "--help") || ($1 == "-h") ]]; then
+if [[ $# -ne 2 || ($1 == "--help") || ($1 == "-h") ]]; then
     echo "Usage: ece350l organize [FILE]"
     echo "Usage: ece350l publish [BATCHDIR]"
     exit 1
