@@ -6,7 +6,6 @@ function do_extract() {
     names=($(echo $prefix | grep -o '^.*[a-z]'))
     for name in "${names[@]}"
     do
-        [ -d "$name" ] && break
         mkdir $name > /dev/null 2>&1
         mv $name* $name/ > /dev/null 2>&1
         cd $name/
@@ -142,6 +141,7 @@ if [[ $# -ne 2 || ($1 == "--help") || ($1 == "-h") ]]; then
 fi
 
 if [[ ($1 == "organize") ]]; then
+    [ -d "submissions" ] && exit 1
     unzip $2 -d submissions/
     cd submissions
     do_extract
