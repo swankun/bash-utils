@@ -1,0 +1,150 @@
+#!/bin/bash
+
+function do_extract() {
+    rename "s/_LATE//" *
+    prefix=$(ls $PWD | grep -o '^.*[a-z]_[0-9]\{5,\}_' | uniq | grep -o '^.*[a-z]')
+    names=($(echo $prefix | grep -o '^.*[a-z]'))
+    for name in "${names[@]}"
+    do
+        mkdir $name > /dev/null 2>&1
+        mv $name* $name/ > /dev/null 2>&1
+        cd $name/
+        n=0;
+        if [ $(ls -1 *.pdf 2>/dev/null | wc -l) != 0 ]; then	
+        for file in *.pdf; do 
+            mv "${file}" report_"${n}".pdf; 
+            n=$((n+1)); 
+            done
+        elif [ $(ls -1 *.docx 2>/dev/null | wc -l) != 0 ]; then
+            for file in *.docx; do 
+            mv "${file}" report_"${n}".docx; 
+            n=$((n+1)); 
+            done
+        fi
+        if [ $(ls -1 *.m 2>/dev/null | wc -l) != 0 ]; then
+            rename 'y/ /_/' *.m	# replace spaces with _
+            rename "s/$name_.*[0-9]_.*[0-9]_//" *.m
+            if [ $(ls -1 my_unit_step* 2>/dev/null | wc -l) != 0 ]; then 
+                mv my_unit_step* my_unit_step.m > /dev/null 2>&1
+            else
+                create_my_unit_step
+            fi
+            if [ $(ls -1 my_discr_conv* 2>/dev/null | wc -l) != 0 ]; then 
+                mv my_discr_conv* my_discr_conv.m > /dev/null 2>&1
+            else
+                create_my_discr_conv
+            fi
+            if [ $(ls -1 my_cont_conv* 2>/dev/null | wc -l) != 0 ]; then 
+                mv my_cont_conv* my_cont_conv.m > /dev/null 2>&1
+            else
+                create_my_cont_conv
+            fi
+            script_name=$(find *m -type f ! -name "my_*.m")
+            echo "Renaming script from $PWD/$script_name to $PWD/script.m"
+            mv $script_name script.m
+        fi
+        cd ../
+    done
+}
+
+function create_my_unit_step() {
+    cat >my_unit_step.m << EOF
+function y = my_unit_step( t, mu )
+%MY_UNIT_STEP Returns a unit step function u(t-mu)
+
+y = zeros(size(t));
+y(t>=mu) = 1;
+
+end
+EOF
+}
+
+function create_my_discr_conv() {
+    cat >my_discr_conv.m << EOF
+function [ y, ny ] = my_discr_conv( x, h, nx, nh )
+%MY_DISCR_CONV Discrete convolution with time array output
+%   [y, ny] = my_discr_conv( x, h, nx, nh ) convolves vectors
+%   x and h, then gives the results as the vector y, which 
+%   corresponds to the time array ny.
+
+y = conv(x,h);
+
+nx_first = nx(1);
+nx_last = nx(end);
+
+nh_first = nh(1);
+nh_last = nh(end);
+
+ny = (nx_first+nh_first):(nx_last+nh_last);
+if length(y) ~= length(ny)
+    error('Something went wrong.');
+end
+
+end
+EOF
+}
+
+function create_my_cont_conv() {
+    cat >my_cont_conv.m << EOF
+function [ y, ty ] = my_cont_conv( x, h, tx, th )
+%MY_CONT_CONV Continuous convolution with time array output
+%   [y, ty] = my_cont_conv( x, h, tx, th ) convolves vectors
+%   x and h, then gives the results as the vector y, which 
+%   corresponds to the time array ty.
+
+dt_x = (tx(end)-tx(1))/(length(tx)-1);
+dt_h = (th(end)-th(1))/(length(th)-1);
+if dt_x == dt_h
+    dt = dt_x;
+else
+    error('Input time arrays do not have the same time sampling.')
+end
+
+y = conv(x,h)*dt;
+
+tx_first = tx(1);
+tx_last = tx(end);
+
+th_first = th(1);
+th_last = th(end);
+
+ty = (tx_first+th_first):dt:(tx_last+th_last);
+if length(y) ~= length(ty)
+    error('Something went wrong.');
+end
+
+end
+EOF
+}
+
+function do_publish() {
+    names=($(ls $PWD))
+    cmd=""
+    for name in "${names[@]}"
+    do
+	if [ $(ls -1 $name/script.m 2>/dev/null | wc -l) != 0 ]; then
+	    echo "Adding $name to publish list"
+            cd $name/
+	    cmd="$cmd cd $name; publish('script.m'); cd ..;"
+            cd ../
+	fi
+    done
+    matlab -nouserjavapath -nodisplay -batch "$cmd"
+}
+
+
+## Entry point
+if [[ $# -lt 1 || ($1 == "--help") || ($1 == "-h") ]]; then
+    echo "Usage: ece350l organize [FILE]"
+    echo "Usage: ece350l publish [BATCHDIR]"
+    exit 1
+fi
+
+if [[ ($1 == "organize") ]]; then
+    unzip $2 -d submissions/
+    cd submissions
+    do_work
+elif [[ ($1 == "publish") ]]; then
+    cd $2
+    do_publish
+fi
