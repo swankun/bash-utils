@@ -12,12 +12,12 @@ function do_extract() {
         n=0;
         if [ $(ls -1 *.pdf 2>/dev/null | wc -l) != 0 ]; then	
             for file in *.pdf; do 
-                mv "${file}" report_"${n}".pdf > /dev/null 2&>1; 
+                mv "${file}" report_"${n}".pdf > /dev/null 2>&1; 
                 n=$((n+1)); 
             done
         elif [ $(ls -1 *.docx 2>/dev/null | wc -l) != 0 ]; then
             for file in *.docx; do 
-                mv "${file}" report_"${n}".docx > /dev/null 2&>1; 
+                mv "${file}" report_"${n}".docx > /dev/null 2>&1; 
                 n=$((n+1)); 
             done
             fi
@@ -41,7 +41,7 @@ function do_extract() {
             fi
             script_name=$(find *m -type f ! -name "my_*.m")
             echo "Renaming script $PWD/$script_name to $PWD/script.m"
-            mv $script_name script.m > /dev/null 2&>1
+            mv $script_name script.m > /dev/null 2>&1
         fi
         cd ../
     done
