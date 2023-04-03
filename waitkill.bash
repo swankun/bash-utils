@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 
 function waitkill() {
+    # No matching process? Do nothing 
+    pkill -0 -f "$@" || return 0
+
+    # Setup
     local TIMEOUT=30
     local INTERVAL=1
     local tmpscript=""
     tmpscript=$(mktemp)
 
-    # Be nice, post SIGTERM first.
+    # Be nice, post SIGTERM first
     pkill --signal SIGTERM -f "$@"
 
     # Wait for process to exit
-    printf "\nWaiting for %s to exit.\n" "$@"
     cat <<EOF > "$tmpscript"
 ((t = $TIMEOUT))
 pkill -0 -f "$@"
@@ -22,16 +25,16 @@ while [[ (\$ret -eq 0) && (\$t > 0) ]]; do
     ret=\$?
 done
 EOF
-    gum spin --spinner dot -- /bin/bash "$tmpscript"
-    rm "$tmpscript"
+    (
+        GUM_SPIN_TITLE=$(printf "Waiting for %s to exit...\n" "$@") \
+            gum spin --spinner dot -- /bin/bash "$tmpscript"
+        rm "$tmpscript"
+    )
 
-    # Done being nice. SIGKIL
-    pkill -0 -f "$@"
-    ret=$?
-    if ((ret == 0)); then
-        printf "\nUnable to gracefully stop %s. Raising to SIGKILL\n" "$@"
-        pkill -9 -f "$@"
-    else
-        printf "\n%s exited gracefully.\n" "$@"
-    fi
+    # If it died, stop
+    pkill -0 -f "$@" || return 0
+
+    # Otherwise, done being nice. Send SIGKILL
+    printf "Unable to gracefully stop %s. Raising to SIGKILL\n" "$@"
+    pkill -9 -f "$@"
 }
