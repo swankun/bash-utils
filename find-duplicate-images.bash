@@ -72,7 +72,7 @@ do
             NJOBS="$2"
             shift 2
             ;;
-        "-t" | "--threshold" ) # set number of jobs
+        "-t" | "--threshold" ) # set threshold
             DIFF_THRESHOLD="$2"
             shift 2
             ;;
@@ -89,7 +89,7 @@ done
 
 [ $# -lt 2 ] && help
 find_all_duplicates "$@"
-# to_remove=($(find_all_duplicates))
+# to_remove=($(find_all_duplicates "$@"))
 # for file in "${to_remove[@]}"; do
 #     rm "${file%.color.png}"*
 # done
