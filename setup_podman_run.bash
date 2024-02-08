@@ -20,7 +20,7 @@ __complete_delegate_podman()
     fi
 
     i=1
-    [[ "${words[0]}" == "podstart" ]] && {
+    [[ "${words[0]}" == "podstart" || "${words[0]}" == "podrun" ]] && {
         ((cword++)); words=('podman' 'run' "${words[@]:$i}")
     }
     [[ "${words[0]}" == "podshell" ]] && {
@@ -49,7 +49,7 @@ __complete_delegate_podman()
 }
 
 
-podstart() {
+podrun() {
     xhost | grep -q "$USER" || {
         echo "Enabling X11 authority"
         xhost +"SI:localuser:${USER}"
@@ -66,8 +66,6 @@ podstart() {
         --rm
         --env "DISPLAY=${DISPLAY}"
         --volume "${CONTAINER_CACHE_HOME}:${HOME}"
-        --workdir "${HOME}"
-        --detach
     )
     if [[ ! -z "$SSH_AUTH_SOCK" ]]; then
         runopts+=(--volume "${SSH_AUTH_SOCK}":"${SSH_AUTH_SOCK}")
@@ -89,10 +87,18 @@ podstart() {
             }
         fi
         runopts+=(--volume "${PWD}":"${PWD}")
+        runopts+=(--workdir "${PWD}")
+    else
+        runopts+=(--workdir "${HOME}")
     fi
     podman run "${runopts[@]}" "$@"
 }
-complete -F __complete_delegate_podman podstart
+complete -F __complete_delegate_podman podrun
+
+podstart() {
+    podrun --detach "$@"
+}
+complete -F __complete_delegate_podman start
 
 podshell() {
     if [ -t 1 ]; then
