@@ -3,11 +3,12 @@
 # Default values
 DIFF_THRESHOLD=0.4
 NJOBS=4
+METRIC_TYPE="PAE"
 
 get_diff_metric() {
     declare -a diff_metric
     magick_out=($(
-        magick compare -metric PAE \
+        magick compare -metric "${METRIC_TYPE}" \
         $1 \
         $2 \
         /dev/null \
@@ -57,8 +58,8 @@ help() {
 }
 
 
-SHORTOPTS=h,j:,t:
-LONGOPTS=help,jobs:,threshold:
+SHORTOPTS=h,j:,t:,m:
+LONGOPTS=help,jobs:,threshold:,metric:
 OPTS=$(getopt -a -n "find-duplicate-images" --options $SHORTOPTS --longoptions $LONGOPTS -- "$@")
 [ $? -ne 0 ] && help
 eval set -- "$OPTS"
@@ -74,6 +75,10 @@ do
             ;;
         "-t" | "--threshold" ) # set threshold
             DIFF_THRESHOLD="$2"
+            shift 2
+            ;;
+	"-m" | "--metric" ) # set threshold
+            METRIC_TYPE="$2"
             shift 2
             ;;
         -- )
