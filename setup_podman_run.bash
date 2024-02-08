@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+CONTAINER_CACHE_HOME="${HOME}/.containers/cache/home"
+
 eval "$(podman completion bash)"
 
 # Adapted from __start_podman given by the output of $(podman completion bash)
@@ -54,21 +56,47 @@ podstart() {
         --userns=keep-id
         --security-opt=label=disable
         --device=nvidia.com/gpu=all
+        --tz=local
         --tty
         --interactive
         --rm
         --env "DISPLAY=${DISPLAY}"
-        --volume "${HOME}/Projects:${HOME}/Projects"
-        --volume "${HOME}/.cache/containers/home:${HOME}"
+        --volume "${CONTAINER_CACHE_HOME}:${HOME}"
         --workdir "${HOME}"
         --detach
     )
+    if [[ ! -z "$SSH_AUTH_SOCK" ]]; then
+        runopts+=(--volume "${SSH_AUTH_SOCK}":"${SSH_AUTH_SOCK}")
+        runopts+=(--env "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}")
+    fi
+    if [[ "$PWD" != "$HOME" && "$PWD" == *"$HOME"* ]]; then
+        local _container_home="$CONTAINER_CACHE_HOME"
+        local _target_in_container="${_container_home}"/"${PWD#${HOME}/}"
+        if [[ ! -d "$_target_in_container" ]]; then
+            mkdir -p "$_target_in_container"
+        else
+            local _nonempty_dirs="$(find "$_target_in_container" -maxdepth 1 -type d ! -empty)"
+            [[ ! -z "$_nonempty_dirs" ]] && {
+                printf -v _warn_msg "%s" \
+                    "Warning: mounting pwd would overwrite " \
+                    "these nonempty directories in the container"
+                echo "$_warn_msg"
+                echo "$_nonempty_dirs"
+            }
+        fi
+        runopts+=(--volume "${PWD}":"${PWD}")
+    fi
     podman run "${runopts[@]}" "$@"
 }
 complete -F __complete_delegate_podman podstart
 
 podshell() {
-    podman exec --tty --interactive "$@" bash -l
+    if [ -t 1 ]; then
+        podman exec --tty --interactive \
+            --env "TERM=xterm-256color" "$@" bash -l
+    else
+        podman exec --interactive "$@" bash -l
+    fi
 }
 complete -F __complete_delegate_podman podshell
 
