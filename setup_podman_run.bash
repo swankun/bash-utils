@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-CONTAINER_CACHE_HOME="${HOME}/.containers/cache/home"
+declare CONTAINER_CACHE_HOME 
+[[ -z "$CONTAINER_CACHE_HOME" ]] && CONTAINER_CACHE_HOME="${HOME}/.containers/cache/home"
 
 eval "$(podman completion bash)"
 
@@ -50,6 +51,7 @@ __complete_delegate_podman()
 
 
 podrun() {
+    # echo "CONTAINER_CACHE_HOME = $CONTAINER_CACHE_HOME"
     xhost | grep -q "$USER" || {
         echo "Enabling X11 authority"
         xhost +"SI:localuser:${USER}"
