@@ -50,6 +50,10 @@ __complete_delegate_podman()
 
 
 podstart() {
+    xhost | grep -q "$USER" || {
+        echo "Enabling X11 authority"
+        xhost +"SI:localuser:${USER}"
+    }
     local runopts=(
         --net=host
         --group-add=keep-groups
