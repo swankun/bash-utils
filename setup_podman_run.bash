@@ -100,7 +100,7 @@ complete -F __complete_delegate_podman podrun
 podstart() {
     podrun --detach "$@"
 }
-complete -F __complete_delegate_podman start
+complete -F __complete_delegate_podman podstart
 
 podshell() {
     if [ -t 1 ]; then
