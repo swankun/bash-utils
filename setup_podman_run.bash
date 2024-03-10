@@ -51,7 +51,10 @@ __complete_delegate_podman()
 
 
 podrun() {
-    # echo "CONTAINER_CACHE_HOME = $CONTAINER_CACHE_HOME"
+    [ -d $CONTAINER_CACHE_HOME ] || {
+        echo "Creating new home cache directory at ${CONTAINER_CACHE_HOME}"
+        mkdir -p "$CONTAINER_CACHE_HOME"
+    }
     xhost | grep -q "$USER" || {
         echo "Enabling X11 authority"
         xhost +"SI:localuser:${USER}"
@@ -83,9 +86,10 @@ podrun() {
             [[ ! -z "$_nonempty_dirs" ]] && {
                 printf -v _warn_msg "%s" \
                     "Warning: mounting pwd would overwrite " \
-                    "these nonempty directories in the container"
+                    "these nonempty directories in the container:"
                 echo "$_warn_msg"
                 echo "$_nonempty_dirs"
+                echo
             }
         fi
         runopts+=(--volume "${PWD}":"${PWD}")
